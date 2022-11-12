@@ -1,9 +1,9 @@
 import { renderToString } from 'react-dom/server';
 
-import { Html } from '../app/html';
+import Document from './document';
 
 function render(url: string) {
-    return renderToString(<Html>{url}</Html>);
+    return renderToString(<Document />);
 }
 
 console.log(render(process.argv[2]));
