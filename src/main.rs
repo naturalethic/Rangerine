@@ -1,9 +1,9 @@
+use fsutils::rm_r;
+use include_dir::{include_dir, Dir};
 use notify::FsEventWatcher;
 use once_cell::sync::OnceCell;
-use std::{path::Path, thread};
-use tiny_http::{Request, Response, Server};
-use include_dir::{include_dir, Dir};
-use fsutils::{rm_r};
+use rouille::{Request, Response};
+use std::path::Path;
 
 static WATCHER: OnceCell<FsEventWatcher> = OnceCell::new();
 static WEB: Dir = include_dir!("web/src");
@@ -12,11 +12,7 @@ fn main() {
     cache();
     compile();
     watch();
-    let server = Server::http("127.0.0.1:7777").unwrap();
-    loop {
-        let request = server.recv().unwrap();
-        thread::spawn(move || handle(request));
-    }
+    rouille::start_server("127.0.0.1:7777", move |request| handle(request));
 }
 
 fn cache() {
@@ -57,13 +53,6 @@ fn watch() {
     WATCHER.set(watcher).unwrap();
 }
 
-fn handle(request: Request) {
-    println!("{} {}", request.method(), request.url());
-    let html = render(request.url());
-    let response = Response::from_string(html).with_status_code(200);
-    request.respond(response).unwrap();
-}
-
 fn render(url: &str) -> String {
     let output = std::process::Command::new("node")
         .arg(".cache/src/script/render.js")
@@ -74,4 +63,10 @@ fn render(url: &str) -> String {
     html.push_str("<!DOCTYPE html>");
     html.push_str(String::from_utf8_lossy(&output.stdout).as_ref());
     html
+}
+
+fn handle(request: &Request) -> Response {
+    println!("{} {}", request.method(), request.url());
+    let content = render(&request.url());
+    Response::html(content)
 }
