@@ -735,6 +735,7 @@ dependencies = [
  "fsutils",
  "glob",
  "include_dir",
+ "mime_guess",
  "notify",
  "once_cell",
  "rouille",
