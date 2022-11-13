@@ -23,3 +23,34 @@ function render() {
 }
 
 hydrateRoot(document.querySelector("main")!, render());
+
+declare global {
+    interface Window {
+        socket: any;
+    }
+}
+
+function connect() {
+    const socket = new WebSocket(`ws://${location.host}/_socket`);
+
+    socket.addEventListener("error", (error: any) => {
+        // console.error(error);
+    });
+
+    socket.addEventListener("open", () => {
+        // console.log("open");
+    });
+
+    socket.addEventListener("close", () => {
+        // console.log("close");
+        setTimeout(connect, 1000);
+    });
+
+    socket.addEventListener("message", ({ data }) => {
+        location.reload();
+    });
+
+    window.socket = socket;
+}
+
+connect();

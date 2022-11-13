@@ -1,15 +1,23 @@
-use fsutils::rm_r;
+use fsutils::{mkdir, rm_r};
 use include_dir::{include_dir, Dir};
-use mime_guess::MimeGuess;
 use notify::FsEventWatcher;
 use once_cell::sync::OnceCell;
-use rouille::{Request, Response};
+use rouille::websocket::Websocket;
+use rouille::{extension_to_mime, websocket, Request, Response};
+use std::sync::mpsc::Receiver;
+use std::sync::Mutex;
 use std::{fs::File, path::Path};
 
 static WATCHER: OnceCell<FsEventWatcher> = OnceCell::new();
 static WEB: Dir = include_dir!("web/dist");
+static TAILWIND: Dir = include_dir!("web/node_modules/tailwindcss/lib/css");
+static RECEIVERS: OnceCell<Mutex<Vec<Receiver<Websocket>>>> = OnceCell::new();
+static SOCKETS: OnceCell<Mutex<Vec<Websocket>>> = OnceCell::new();
+
 fn main() {
     println!("Starting server on port 7777");
+    RECEIVERS.set(Mutex::new(Vec::new())).ok();
+    SOCKETS.set(Mutex::new(Vec::new())).ok();
     cache();
     compile();
     watch();
@@ -20,18 +28,51 @@ fn cache() {
     println!("Building cache...");
     rm_r(".cache");
     WEB.extract(".cache/dist").unwrap();
+    mkdir(".cache/dist/node/css");
+    TAILWIND.extract(".cache/dist/node/css").unwrap();
 }
 
 fn compile() {
     println!("Building app...");
+    // let sources = glob::glob("app/**/*.css").unwrap();
+    // let output = std::process::Command::new("esbuild")
+    //     .args(sources.map(|s| s.unwrap()))
+    //     .arg("--outdir=.cache/app")
+    //     .arg("--bundle")
+    //     .output()
+    //     .unwrap();
+    // println!("{}", String::from_utf8(output.stderr).unwrap());
     let sources = glob::glob("app/**/*.ts*").unwrap();
     let output = std::process::Command::new("esbuild")
         .args(sources.map(|s| s.unwrap()))
         .arg("--outdir=.cache/app")
+        // .arg("--bundle")
         .arg("--format=cjs")
         .output()
         .unwrap();
-    println!("{}", String::from_utf8_lossy(&output.stderr));
+    println!("{}", String::from_utf8(output.stderr).unwrap());
+    notify();
+}
+
+fn notify() {
+    let mut sockets = SOCKETS.get().unwrap().lock().unwrap();
+    let mut receivers = RECEIVERS.get().unwrap().lock().unwrap();
+    for i in (0..receivers.len()).rev() {
+        let receiver = receivers.remove(i);
+        sockets.push(receiver.recv().unwrap());
+    }
+    for i in (0..sockets.len()).rev() {
+        let socket = sockets.get_mut(i).unwrap();
+        match socket.send_text("reload") {
+            Ok(_) => {
+                println!("Sent reload message to client");
+            }
+            Err(_) => {
+                println!("Removing dead socket");
+                sockets.remove(i);
+            }
+        }
+    }
 }
 
 fn watch() {
@@ -76,6 +117,12 @@ fn handle(request: &Request) -> Response {
                 File::open(".cache/dist/bundle/runtime.js").unwrap(),
             )
         }
+        "/_socket" => {
+            println!("200");
+            let (response, receiver) = websocket::start::<&str>(request, None).unwrap();
+            RECEIVERS.get().unwrap().lock().unwrap().push(receiver);
+            response
+        }
         url => {
             if request.raw_query_string() == "client" {
                 let output = std::process::Command::new("esbuild")
@@ -84,7 +131,10 @@ fn handle(request: &Request) -> Response {
                     .output()
                     .unwrap();
                 println!("200");
-                println!("{}", String::from_utf8_lossy(&output.stderr));
+                let error = String::from_utf8_lossy(&output.stderr);
+                if !error.is_empty() {
+                    println!("{error}");
+                }
                 let output = String::from_utf8_lossy(&output.stdout)
                     .replace("react/jsx-runtime", "/_runtime");
                 Response::from_data("application/javascript", output)
@@ -95,12 +145,24 @@ fn handle(request: &Request) -> Response {
                     println!("200");
                     Response::html(render(url))
                 } else if Path::new(&format!("app{url}")).exists() {
-                    let mime = MimeGuess::from_path(url)
-                        .first_or_octet_stream()
-                        .essence_str()
-                        .to_string();
-                    println!("200");
-                    Response::from_file(mime, File::open(format!("app{url}")).unwrap())
+                    let path = format!("app{url}");
+                    let extension = Path::new(&path).extension().unwrap().to_str().unwrap();
+                    let mime = extension_to_mime(extension);
+                    if extension == "css" {
+                        let output = std::process::Command::new("node")
+                            .arg(".cache/dist/node/postcss.js")
+                            .arg(url)
+                            .output()
+                            .unwrap();
+                        let error = String::from_utf8_lossy(&output.stderr);
+                        if !error.is_empty() {
+                            println!("{error}");
+                        }
+                        Response::from_data(mime, output.stdout)
+                    } else {
+                        println!("200");
+                        Response::from_file(mime, File::open(format!("app{url}")).unwrap())
+                    }
                 } else {
                     println!("404");
                     Response::empty_404()
