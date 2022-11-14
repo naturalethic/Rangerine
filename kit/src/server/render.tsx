@@ -19,7 +19,7 @@ async function render(url: string) {
         //     "",
         // );
         // const Page = eval(code).default;
-        const module = await import(`../app${path}.js`);
+        const module = await import(`../../app${path}.js`);
         // const Page = await import(`../app${path}.js`).then(
         //     (module) => module.default,
         // );

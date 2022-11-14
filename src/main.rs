@@ -29,8 +29,8 @@ fn cache() {
     println!("Building cache...");
     rm_r(".cache");
     KIT.extract(".cache/dist").unwrap();
-    mkdir(".cache/dist/node/css");
-    TAILWIND.extract(".cache/dist/node/css").unwrap();
+    mkdir(".cache/dist/server/css");
+    TAILWIND.extract(".cache/dist/server/css").unwrap();
 }
 
 fn compile() {
@@ -98,7 +98,7 @@ fn watch() {
 fn render(url: &str) -> String {
     let output = std::process::Command::new("node")
         // .arg(".cache/dist/node/render.js")
-        .arg(".cache/dist/render.js")
+        .arg(".cache/dist/server/render.js")
         .arg(url)
         .output()
         .unwrap();
@@ -116,14 +116,14 @@ fn handle(request: &Request) -> Response {
             println!("200");
             Response::from_file(
                 "application/javascript",
-                File::open(".cache/dist/bundle/hydrate.js").unwrap(),
+                File::open(".cache/dist/client/hydrate.js").unwrap(),
             )
         }
         "/_runtime" => {
             println!("200");
             Response::from_file(
                 "application/javascript",
-                File::open(".cache/dist/bundle/runtime.js").unwrap(),
+                File::open(".cache/dist/client/runtime.js").unwrap(),
             )
         }
         "/_socket" => {
@@ -151,7 +151,7 @@ fn handle(request: &Request) -> Response {
                     let mime = extension_to_mime(extension);
                     if extension == "css" {
                         let output = std::process::Command::new("node")
-                            .arg(".cache/dist/postcss.js")
+                            .arg(".cache/dist/server/postcss.js")
                             .arg(url)
                             .output()
                             .unwrap();

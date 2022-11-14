@@ -1,7 +1,7 @@
 help:
 	@echo "Commands:"
 	@echo "  kit/build"
-	@echo "  sample/dev"
+	@echo "  cms/dev"
 
 BUNDLE_SOURCES=$(shell find kit/src/client -name "*.ts*")
 MODULE_SOURCES=$(shell find kit/src/server kit/src/lib -name "*.ts*")
@@ -13,7 +13,7 @@ kit/build:
 	tsc -p kit --declaration --emitDeclarationOnly --outDir kit/dist
 	cargo build
 
-sample/dev:
+cms/dev:
 	cargo watch \
 		-w "src" -w "kit/src" -w "Makefile" \
-		-s "make kit/build && cd sample && ../target/debug/rangerine impl"
+		-s "make kit/build && cd cms && ../target/debug/rangerine impl"
