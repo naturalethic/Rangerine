@@ -18,7 +18,6 @@
   "dependencies": {
     "autoprefixer": "^10.4.13",
     "esbuild": "^0.15.13",
-    "fast-glob": "^3.2.12",
     "postcss": "^8.4.19",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

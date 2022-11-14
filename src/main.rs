@@ -4,13 +4,14 @@ use notify::FsEventWatcher;
 use once_cell::sync::OnceCell;
 use rouille::websocket::Websocket;
 use rouille::{extension_to_mime, websocket, Request, Response};
+use std::fs::read_to_string;
 use std::sync::mpsc::Receiver;
 use std::sync::Mutex;
 use std::{fs::File, path::Path};
 
 static WATCHER: OnceCell<FsEventWatcher> = OnceCell::new();
 static KIT: Dir = include_dir!("kit/dist");
-static TAILWIND: Dir = include_dir!("kit/node_modules/tailwindcss/lib/css");
+static TAILWIND: Dir = include_dir!("node_modules/tailwindcss/lib/css");
 static RECEIVERS: OnceCell<Mutex<Vec<Receiver<Websocket>>>> = OnceCell::new();
 static SOCKETS: OnceCell<Mutex<Vec<Websocket>>> = OnceCell::new();
 
@@ -43,15 +44,22 @@ fn compile() {
     //     .unwrap();
     // println!("{}", String::from_utf8(output.stderr).unwrap());
     let sources = glob::glob("app/**/*.ts*").unwrap();
-    let output = std::process::Command::new("esbuild")
+    // XXX: This esbuild path needs to be adapted for a lib install
+    match std::process::Command::new("../node_modules/esbuild/bin/esbuild")
         .args(sources.map(|s| s.unwrap()))
         .arg("--outdir=.cache/app")
-        // .arg("--bundle")
-        .arg("--format=cjs")
+        .arg("--format=esm")
         .output()
-        .unwrap();
-    println!("{}", String::from_utf8(output.stderr).unwrap());
-    notify();
+    {
+        Ok(output) => {
+            println!("{}", String::from_utf8(output.stderr).unwrap());
+            notify();
+        }
+        Err(_) => println!("ERROR: There was a problem running 'esbuild'"),
+    }
+
+    // println!("{}", String::from_utf8(output.stderr).unwrap());
+    // notify();
 }
 
 fn notify() {
@@ -89,7 +97,8 @@ fn watch() {
 
 fn render(url: &str) -> String {
     let output = std::process::Command::new("node")
-        .arg(".cache/dist/node/render.js")
+        // .arg(".cache/dist/node/render.js")
+        .arg(".cache/dist/render.js")
         .arg(url)
         .output()
         .unwrap();
@@ -125,19 +134,11 @@ fn handle(request: &Request) -> Response {
         }
         url => {
             if request.raw_query_string() == "client" {
-                let output = std::process::Command::new("esbuild")
-                    .arg(format!("app{url}.tsx"))
-                    .arg("--format=esm")
-                    .output()
-                    .unwrap();
                 println!("200");
-                let error = String::from_utf8_lossy(&output.stderr);
-                if !error.is_empty() {
-                    println!("{error}");
-                }
-                let output = String::from_utf8_lossy(&output.stdout)
+                let code = read_to_string(format!(".cache/app{url}.js"))
+                    .unwrap()
                     .replace("react/jsx-runtime", "/_runtime");
-                Response::from_data("application/javascript", output)
+                Response::from_data("application/javascript", code)
             } else {
                 if Path::new(&format!("app{url}.tsx")).exists()
                     || Path::new(&format!("app{url}/index.tsx")).exists()
@@ -150,7 +151,7 @@ fn handle(request: &Request) -> Response {
                     let mime = extension_to_mime(extension);
                     if extension == "css" {
                         let output = std::process::Command::new("node")
-                            .arg(".cache/dist/node/postcss.js")
+                            .arg(".cache/dist/postcss.js")
                             .arg(url)
                             .output()
                             .unwrap();
