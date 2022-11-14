@@ -1,3 +1,3 @@
 export default function () {
-    return <div>About</div>;
+    return <div>Admin</div>;
 }

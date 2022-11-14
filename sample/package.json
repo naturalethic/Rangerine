@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "@types/react": "^18.0.25"
+    "@types/react": "^18.0.25",
+    "zod": "^3.19.1"
   }
 }
