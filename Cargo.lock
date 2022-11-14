@@ -738,6 +738,7 @@ dependencies = [
  "notify",
  "once_cell",
  "rouille",
+ "url",
 ]
 
 [[package]]

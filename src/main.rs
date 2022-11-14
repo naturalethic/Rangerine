@@ -95,10 +95,10 @@ fn watch() {
     WATCHER.set(watcher).unwrap();
 }
 
-fn render(url: &str) -> String {
+fn render_page(method: &str, url: &str) -> String {
     let output = std::process::Command::new("node")
-        // .arg(".cache/dist/node/render.js")
-        .arg(".cache/dist/server/render.js")
+        .arg(".cache/dist/server/page.js")
+        .arg(method)
         .arg(url)
         .output()
         .unwrap();
@@ -109,15 +109,38 @@ fn render(url: &str) -> String {
     html
 }
 
+fn render_data(method: &str, url: &str) -> String {
+    let output = std::process::Command::new("node")
+        .arg(".cache/dist/server/data.js")
+        .arg(method)
+        .arg(url)
+        .output()
+        .unwrap();
+    print!("{}", String::from_utf8_lossy(&output.stderr));
+    String::from_utf8_lossy(&output.stdout).into()
+}
+
 fn handle(request: &Request) -> Response {
     print!("{} {} ", request.method(), request.url());
+
     match request.url().as_str() {
         "/_hydrate" => {
             println!("200");
-            Response::from_file(
-                "application/javascript",
-                File::open(".cache/dist/client/hydrate.js").unwrap(),
-            )
+            let url = url::Url::parse(request.header("Referer").unwrap_or("")).unwrap();
+            let data = render_data(request.method(), url.path());
+            let code = read_to_string(format!(".cache/dist/client/hydrate.js"))
+                .unwrap()
+                .replace("const data = {}", &format!("const data = {}", data));
+
+            // let data: Record<string, any> = {};
+            // .unwrap()
+
+            Response::from_data("application/javascript", code)
+
+            // Response::from_file(
+            //     "application/javascript",
+            //     File::open(".cache/dist/client/hydrate.js").unwrap(),
+            // )
         }
         "/_runtime" => {
             println!("200");
@@ -144,7 +167,7 @@ fn handle(request: &Request) -> Response {
                     || Path::new(&format!("app{url}/index.tsx")).exists()
                 {
                     println!("200");
-                    Response::html(render(url))
+                    Response::html(render_page(request.method(), url))
                 } else if Path::new(&format!("app{url}")).exists() {
                     let path = format!("app{url}");
                     let extension = Path::new(&path).extension().unwrap().to_str().unwrap();
