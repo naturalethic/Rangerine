@@ -1,4 +1,5 @@
 import "react/jsx-runtime";
+// import es from "esbuild";
 import { sync as glob } from "fast-glob";
 import { readFileSync } from "fs";
 import { Module } from "module";
@@ -6,11 +7,17 @@ import { Suspense } from "react";
 import { renderToString } from "react-dom/server";
 import Document from "../split/document";
 
+// Remember to remove homebrew esbuild
+
 async function render(url: string) {
     let content;
     let segment = url;
     while (segment) {
         const path = segment.endsWith("/") ? `${segment}index` : segment;
+        // const codex = await es.build({
+        //     write: false,
+        // });
+        // console.log(code);
         const code = readFileSync(`.cache/app${path}.js`, "utf-8").replace(
             `var import_jsx_runtime = require("react/jsx-runtime");`,
             "",

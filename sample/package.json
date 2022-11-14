@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@tangerine/kit": "^0.0.1",
     "@types/react": "^18.0.25",
     "zod": "^3.19.1"
   }

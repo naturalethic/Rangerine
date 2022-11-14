@@ -10,8 +10,8 @@ export interface ApiBase<
         post: Parameters<Post>;
     };
     output: {
-        get: Awaited<ReturnType<Get>>;
-        post: Awaited<ReturnType<Post>>;
+        get?: Awaited<ReturnType<Get>>;
+        post?: Awaited<ReturnType<Post>>;
     };
 }
 

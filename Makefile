@@ -1,19 +1,23 @@
 help:
 	@echo "Commands:"
+	@echo "  kit/build"
 	@echo "  sample/dev"
+
+LIB_SOURCES=$(shell find kit/lib -name '*.ts')
+BUNDLE_SOURCES=$(shell find kit/src/bundle -name "*.ts*")
+SPLIT_SOURCES=$(shell find kit/src/split -name "*.ts*")
+NODE_SOURCES=$(shell find kit/src/node -name "*.ts*")
+
+kit/build:
+	rm -rf kit/dist
+	esbuild $(LIB_SOURCES) --format=esm --outdir=kit/dist/lib
+	esbuild $(BUNDLE_SOURCES) --bundle --format=esm --outdir=kit/dist/bundle
+	esbuild $(NODE_SOURCES) --bundle --platform=node --outdir=kit/dist/node --external:esbuild
+	esbuild $(SPLIT_SOURCES) --outdir=kit/dist/split
+	tsc -p kit --declaration --emitDeclarationOnly --outDir kit/dist
+	cargo build
 
 sample/dev:
 	cargo watch \
-		-w "src" -w "web/src" \
-		-s "make sample/dev/build && cd sample && ../target/debug/rangerine impl"
-
-BUNDLE_SOURCES=$(shell find web/src/bundle -name "*.ts*")
-SPLIT_SOURCES=$(shell find web/src/split -name "*.ts*")
-NODE_SOURCES=$(shell find web/src/node -name "*.ts*")
-
-sample/dev/build:
-	rm -rf web/dist
-	esbuild --bundle $(BUNDLE_SOURCES) --format=esm --outdir=web/dist/bundle
-	esbuild --bundle $(NODE_SOURCES) --platform=node --outdir=web/dist/node
-	esbuild $(SPLIT_SOURCES) --outdir=web/dist/split
-	cargo build
+		-w "src" -w "kit/src" \
+		-s "make kit/build && cd sample && ../target/debug/rangerine impl"

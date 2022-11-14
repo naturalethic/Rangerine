@@ -9,8 +9,8 @@ use std::sync::Mutex;
 use std::{fs::File, path::Path};
 
 static WATCHER: OnceCell<FsEventWatcher> = OnceCell::new();
-static WEB: Dir = include_dir!("web/dist");
-static TAILWIND: Dir = include_dir!("web/node_modules/tailwindcss/lib/css");
+static KIT: Dir = include_dir!("kit/dist");
+static TAILWIND: Dir = include_dir!("kit/node_modules/tailwindcss/lib/css");
 static RECEIVERS: OnceCell<Mutex<Vec<Receiver<Websocket>>>> = OnceCell::new();
 static SOCKETS: OnceCell<Mutex<Vec<Websocket>>> = OnceCell::new();
 
@@ -27,7 +27,7 @@ fn main() {
 fn cache() {
     println!("Building cache...");
     rm_r(".cache");
-    WEB.extract(".cache/dist").unwrap();
+    KIT.extract(".cache/dist").unwrap();
     mkdir(".cache/dist/node/css");
     TAILWIND.extract(".cache/dist/node/css").unwrap();
 }

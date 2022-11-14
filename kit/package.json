@@ -1,0 +1,28 @@
+{
+  "name": "@tangerine/kit",
+  "version": "0.0.1",
+  "description": "Tangerine Kit",
+  "type": "module",
+  "files": [
+    "dist/"
+  ],
+  "exports": {
+    ".": "./dist/lib/index.ts"
+  },
+  "typings": "./dist/lib/index.d.ts",
+  "devDependencies": {
+    "@types/node": "^18.11.9",
+    "@types/react": "^18.0.25",
+    "@types/react-dom": "^18.0.8"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.13",
+    "esbuild": "^0.15.13",
+    "fast-glob": "^3.2.12",
+    "postcss": "^8.4.19",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.2.4",
+    "typescript": "^4.8.4"
+  }
+}

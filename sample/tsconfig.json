@@ -7,10 +7,5 @@
         "module": "esnext",
         "target": "esnext",
         "strict": true,
-        "paths": {
-            "@tangerine/*": [
-                "./lib/*"
-            ]
-        }
     },
 }
