@@ -26,8 +26,9 @@ type InferPost<Api> = Api extends { post: infer Post }
         : AsyncNever
     : AsyncNever;
 
-export interface Page<I extends ApiBase<AsyncFunction, AsyncFunction>> {
+export interface Page<C, I extends ApiBase<AsyncFunction, AsyncFunction>> {
     children?: React.ReactNode;
+    context: C;
     input: I["output"];
 }
 

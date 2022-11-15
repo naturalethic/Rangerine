@@ -1,8 +1,10 @@
 {
+  "name": "@tangerine/cms",
   "type": "module",
   "dependencies": {
     "@tangerine/kit": "^0.0.1",
     "@types/react": "^18.0.25",
+    "surrealdb.js": "^0.5.0",
     "zod": "^3.19.1"
   }
 }

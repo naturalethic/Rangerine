@@ -131,16 +131,7 @@ fn handle(request: &Request) -> Response {
             let code = read_to_string(format!(".cache/dist/client/hydrate.js"))
                 .unwrap()
                 .replace("const data = {}", &format!("const data = {}", data));
-
-            // let data: Record<string, any> = {};
-            // .unwrap()
-
             Response::from_data("application/javascript", code)
-
-            // Response::from_file(
-            //     "application/javascript",
-            //     File::open(".cache/dist/client/hydrate.js").unwrap(),
-            // )
         }
         "/_runtime" => {
             println!("200");
