@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 import { renderToString } from "react-dom/server";
-import { reduceUrl } from "../../lib/helper.js";
-import Document from "./document.js";
+import Document from "./document";
+import { reduceUrl } from "./helper";
+
+export { css } from "./css";
+export { hydrate } from "./hydrate";
+export { esm } from "./esm";
 
 interface Module {
     default: any;
@@ -35,7 +39,7 @@ async function reduce<T>(
     return await reduceUrl<any>(
         { method, url, content },
         async ({ path, segment }) => {
-            const module = await import(`../../../app${path}.js`);
+            const module = await import(`${process.cwd()}/app${path}`);
             const data = {
                 get: method === "GET" ? await module.api?.get?.() : undefined,
             };
@@ -54,7 +58,7 @@ async function reduce<T>(
     );
 }
 
-export async function data(method: string, url: string) {
+export async function renderData(method: string, url: string) {
     return await reduce<any>(
         method,
         url,
@@ -65,7 +69,6 @@ export async function data(method: string, url: string) {
         },
     );
 }
-
 export async function render(method: string, url: string) {
     const content = await reduce<any>(
         method,

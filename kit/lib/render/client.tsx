@@ -1,13 +1,15 @@
+/// <reference lib="dom" />
+
 import { lazy, Suspense } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { reduceUrl } from "../lib/helper.js";
+import { reduceUrl } from "./helper";
 
 async function render() {
     const data: Record<string, any> = {};
     return await reduceUrl<any>(
         { url: location.pathname, data },
         async ({ path, content, data }) => {
-            const Component = lazy(async () => await import(`${path}?client`));
+            const Component = lazy(async () => await import(`${path}.tsx`));
             return (
                 <Suspense>
                     <Component input={data}>{content}</Component>
@@ -27,22 +29,22 @@ declare global {
     }
 }
 
-function connect() {
-    const socket = new WebSocket(`ws://${location.host}/_socket`);
+// function connect() {
+//     const socket = new WebSocket(`ws://${location.host}/_socket`);
 
-    socket.addEventListener("error", (error: any) => {});
+//     socket.addEventListener("error", (error: any) => {});
 
-    socket.addEventListener("open", () => {});
+//     socket.addEventListener("open", () => {});
 
-    socket.addEventListener("close", () => {
-        setTimeout(connect, 1000);
-    });
+//     socket.addEventListener("close", () => {
+//         setTimeout(connect, 1000);
+//     });
 
-    socket.addEventListener("message", ({ data }) => {
-        location.reload();
-    });
+//     socket.addEventListener("message", ({ data }) => {
+//         location.reload();
+//     });
 
-    window.socket = socket;
-}
+//     window.socket = socket;
+// }
 
-connect();
+// connect();
