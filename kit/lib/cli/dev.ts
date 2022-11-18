@@ -63,10 +63,12 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     if (!existsSync(path)) {
                         return new Response("Not found", { status: 404 });
                     }
-                    const code = readFileSync(path, "utf-8").replace(
-                        `from "react/jsx-runtime";`,
-                        `from "/_runtime";`,
-                    );
+                    const code = readFileSync(path, "utf-8")
+                        .replace(
+                            `from "react/jsx-runtime";`,
+                            `from "/_runtime";`,
+                        )
+                        .replace(`from "@tangerine/kit";`, `from "/_runtime";`);
                     return new Response(code, {
                         headers: {
                             "Content-Type": "application/javascript",
@@ -141,6 +143,8 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     } catch (e: any) {
                         if (e.redirect) {
                             return Response.redirect(e.redirect);
+                        } else {
+                            throw e;
                         }
                     } finally {
                         await destroyContext(context);
@@ -148,6 +152,7 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     headers["Content-Type"] = "text/html";
                     return new Response(html, { headers });
                 } catch (e) {
+                    error(e);
                     return new Response("Internal Server Error", {
                         status: 500,
                     });

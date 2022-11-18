@@ -1,4 +1,4 @@
-import { Context, Page } from "@lib/context";
+import { Context, Page } from "~/lib/context";
 
 export const api = {
     get: async (context: Context) => {

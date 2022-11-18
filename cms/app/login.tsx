@@ -1,3 +1,11 @@
+import { Action, Form, Text } from "~/kit/form";
+
 export default function () {
-    return <div>LOGIN</div>;
+    return (
+        <Form>
+            <Text name="username" />
+            <Text name="password" redacted={true} />
+            <Action name="login" />
+        </Form>
+    );
 }

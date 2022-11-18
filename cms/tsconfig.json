@@ -8,8 +8,8 @@
         "target": "esnext",
         "strict": true,
         "paths": {
-            "@lib/*": [
-                "./lib/*"
+            "~/*": [
+                "./*"
             ]
         }
     },
