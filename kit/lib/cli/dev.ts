@@ -31,7 +31,6 @@ export default function () {
     } else {
         info(`Starting development server at ${hostname}:${port}`);
         buildClient();
-        buildRuntime();
         buildRoutes();
         buildCss();
         globalThis.server = serve(handler({ hostname, port }));
@@ -63,21 +62,19 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     if (!existsSync(path)) {
                         return new Response("Not found", { status: 404 });
                     }
-                    const code = readFileSync(path, "utf-8")
-                        .replace(
-                            `from "react/jsx-runtime";`,
-                            `from "/_runtime";`,
-                        )
-                        .replace(`from "@tangerine/kit";`, `from "/_runtime";`);
-                    return new Response(code, {
+                    return new Response(file(path), {
                         headers: {
                             "Content-Type": "application/javascript",
                         },
                     });
-                } else if (
-                    url.pathname.endsWith(".ts") ||
-                    url.pathname.endsWith(".tsx")
-                ) {
+                } else if (url.pathname.includes("chunk")) {
+                    const path = `.cache${url.pathname}`;
+                    return new Response(file(path), {
+                        headers: {
+                            "Content-Type": "application/javascript",
+                        },
+                    });
+                } else if (url.pathname.endsWith(".tsx")) {
                     return new Response("Not found", { status: 404 });
                 }
                 const mimetype = mime.lookup(url.pathname);
@@ -124,12 +121,6 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                         status: 500,
                     });
                 }
-            } else if (url.pathname === "/_runtime") {
-                return new Response(file(".cache/runtime"), {
-                    headers: {
-                        "Content-Type": "application/javascript",
-                    },
-                });
             } else {
                 try {
                     const context = await createContext(new URL(request.url));
@@ -201,20 +192,12 @@ function buildClient() {
     ]);
 }
 
-function buildRuntime() {
-    spawnSync([
-        "esbuild",
-        "--bundle",
-        "--format=esm",
-        "--outfile=.cache/runtime",
-        import.meta.resolveSync("../render/runtime.ts"),
-    ]);
-}
-
 function buildRoutes() {
     spawnSync([
         "esbuild",
         "--format=esm",
+        "--bundle",
+        "--splitting",
         "--outdir=.cache",
         ...glob.sync("app/**/*.ts*"),
     ]);
