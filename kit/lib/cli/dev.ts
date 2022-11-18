@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from "fs";
 import mime from "mime-types";
 import { resolve } from "path";
 import { error, info, warn } from "~/log";
-import { render, renderData } from "~/render";
+import { renderData, renderServer } from "~/render/server";
 
 declare global {
     var server: Server;
@@ -94,27 +94,34 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     return new Response("Not found", { status: 404 });
                 }
             } else if (url.pathname === "/_hydrate") {
-                const referer = request.headers.get("referer");
-                if (referer === null) {
-                    return new Response("Bad Request", { status: 400 });
+                try {
+                    const referer = request.headers.get("referer");
+                    if (referer === null) {
+                        return new Response("Bad Request", { status: 400 });
+                    }
+                    const refererUrl = new URL(referer);
+                    const context = await createContext(refererUrl);
+                    const data = await renderData(
+                        request.method,
+                        refererUrl.pathname,
+                        context,
+                    );
+                    await destroyContext(context);
+                    const code = readFileSync(".cache/client", "utf-8").replace(
+                        "const data = {}",
+                        `const data = ${JSON.stringify(data)}`,
+                    );
+                    return new Response(code, {
+                        headers: {
+                            "Content-Type": "application/javascript",
+                        },
+                    });
+                } catch (e: any) {
+                    error(e);
+                    return new Response("Internal Server Error", {
+                        status: 500,
+                    });
                 }
-                const refererUrl = new URL(referer);
-                const context = await createContext();
-                const data = await renderData(
-                    request.method,
-                    refererUrl.pathname,
-                    context,
-                );
-                await destroyContext(context);
-                const code = readFileSync(".cache/client", "utf-8").replace(
-                    "const data = {}",
-                    `const data = ${JSON.stringify(data)}`,
-                );
-                return new Response(code, {
-                    headers: {
-                        "Content-Type": "application/javascript",
-                    },
-                });
             } else if (url.pathname === "/_runtime") {
                 return new Response(file(".cache/runtime"), {
                     headers: {
@@ -123,13 +130,21 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                 });
             } else {
                 try {
-                    const context = await createContext();
-                    const html = await render(
-                        request.method,
-                        url.pathname,
-                        context,
-                    );
-                    await destroyContext(context);
+                    const context = await createContext(new URL(request.url));
+                    let html;
+                    try {
+                        html = await renderServer(
+                            request.method,
+                            url.pathname,
+                            context,
+                        );
+                    } catch (e: any) {
+                        if (e.redirect) {
+                            return Response.redirect(e.redirect);
+                        }
+                    } finally {
+                        await destroyContext(context);
+                    }
                     headers["Content-Type"] = "text/html";
                     return new Response(html, { headers });
                 } catch (e) {
@@ -142,7 +157,7 @@ function handler(options: Partial<Serve<ServeOptions>>) {
     };
 }
 
-async function createContext() {
+async function createContext(url: URL) {
     try {
         let module: any;
         try {
@@ -150,7 +165,7 @@ async function createContext() {
         } catch (_) {
             warn("No context module found");
         }
-        return await module.createContext();
+        return await module.createContext(url);
     } catch (e: any) {
         error("Context:", e.message);
     }

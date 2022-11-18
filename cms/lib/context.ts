@@ -18,12 +18,13 @@ if (!globalThis.pool) {
 export interface Context {
     db: Connection;
     session: Session;
+    url: URL;
 }
 
-export async function createContext(): Promise<Context> {
+export async function createContext(url: URL): Promise<Context> {
     const db = await globalThis.pool.acquire();
     const session = await createSession(db);
-    return { db, session };
+    return { db, session, url };
 }
 
 export async function destroyContext(context: Context) {

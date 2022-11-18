@@ -1,4 +1,4 @@
-import { Api, Page } from "@tangerine/kit";
+import { Context, Page } from "@lib/context";
 
 export const api = {
     get: async () => {
@@ -8,6 +8,6 @@ export const api = {
     },
 };
 
-export default function ({ children, input }: Page<Api<typeof api>>) {
+export default function ({ children, input }: Page<typeof api>) {
     return <div>Admin: {input.get?.admin}</div>;
 }

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { renderToString } from "react-dom/server";
+import { renderToReadableStream, renderToString } from "react-dom/server";
 import Document from "./document";
 import { reduceUrl } from "./helper";
 
@@ -36,8 +36,8 @@ async function reduce<T>(
 ) {
     return await reduceUrl<any>(
         { method, url, content },
-        async ({ path, segment }) => {
-            const module = await import(`${process.cwd()}/app${path}`);
+        async ({ path, segment, content }) => {
+            const module: Module = await import(`${process.cwd()}/app${path}`);
             const data = {
                 get:
                     method === "GET"
@@ -71,7 +71,8 @@ export async function renderData(method: string, url: string, context: any) {
         },
     );
 }
-export async function render(method: string, url: string, context: any) {
+
+export async function renderServer(method: string, url: string, context: any) {
     const content = await reduce<any>(
         method,
         url,
@@ -85,5 +86,5 @@ export async function render(method: string, url: string, context: any) {
             );
         },
     );
-    return renderToString(<Document>{content}</Document>);
+    return renderToReadableStream(<Document>{content}</Document>);
 }
