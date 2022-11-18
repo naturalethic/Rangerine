@@ -59,6 +59,23 @@ async function reduce<T>(
     );
 }
 
+export async function leafData(
+    method: string,
+    segment: string,
+    context: any,
+    input: any,
+) {
+    const path = segment.endsWith("/") ? `${segment}index` : segment;
+    const module: Module = await import(`${process.cwd()}/app${path}`);
+    return {
+        get: method === "GET" ? await module.api?.get?.(context) : undefined,
+        post:
+            method === "POST"
+                ? await module.api?.post?.(context, input)
+                : undefined,
+    };
+}
+
 export async function renderData(method: string, url: string, context: any) {
     return await reduce<any>(
         method,

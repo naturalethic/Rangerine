@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from "fs";
 import mime from "mime-types";
 import { resolve } from "path";
 import { error, info, warn } from "~/log";
-import { renderData, renderServer } from "~/render/server";
+import { leafData, renderData, renderServer } from "~/render/server";
 
 declare global {
     var server: Server;
@@ -124,13 +124,28 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             } else {
                 try {
                     const context = await createContext(new URL(request.url));
-                    let html;
                     try {
-                        html = await renderServer(
-                            request.method,
-                            url.pathname,
-                            context,
-                        );
+                        if (request.method === "GET") {
+                            const html = await renderServer(
+                                request.method,
+                                url.pathname,
+                                context,
+                            );
+                            headers["Content-Type"] = "text/html";
+                            return new Response(html, { headers });
+                        } else {
+                            const input = await request.json();
+                            const data = await leafData(
+                                request.method,
+                                url.pathname,
+                                context,
+                                input,
+                            );
+                            headers["Content-Type"] = "application/json";
+                            return new Response(JSON.stringify(data), {
+                                headers,
+                            });
+                        }
                     } catch (e: any) {
                         if (e.redirect) {
                             return Response.redirect(e.redirect);
@@ -140,8 +155,6 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     } finally {
                         await destroyContext(context);
                     }
-                    headers["Content-Type"] = "text/html";
-                    return new Response(html, { headers });
                 } catch (e) {
                     error(e);
                     return new Response("Internal Server Error", {

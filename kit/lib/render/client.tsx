@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 
-import { lazy, Suspense } from "react";
+import { StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
+import { PageProvider } from "~/page";
 import { reduceUrl } from "./helper";
 
 async function render() {
@@ -9,18 +10,20 @@ async function render() {
     return await reduceUrl<any>(
         { url: location.pathname, data },
         async ({ path, content, data }) => {
-            const Component = lazy(async () => await import(`${path}.tsx`));
             return (
-                <Suspense>
-                    <Component input={data}>{content}</Component>
-                </Suspense>
+                <PageProvider path={path} data={data}>
+                    {content}
+                </PageProvider>
             );
         },
     );
 }
 
 render().then((content: any) => {
-    hydrateRoot(document.querySelector("main")!, content);
+    hydrateRoot(
+        document.querySelector("main")!,
+        <StrictMode>{content}</StrictMode>,
+    );
 });
 
 declare global {

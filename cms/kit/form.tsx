@@ -1,9 +1,22 @@
+import { PageContext } from "@tangerine/kit";
+import path from "object-path";
+
 interface Form {
     children?: React.ReactNode;
 }
 
 export function Form({ children }: Form) {
-    return <form className="flex flex-col space-y-2">{children}</form>;
+    return (
+        <form
+            className="flex flex-col space-y-2"
+            onSubmit={(event) => {
+                event.preventDefault();
+                console.log(event);
+            }}
+        >
+            {children}
+        </form>
+    );
 }
 
 interface Text {
@@ -65,27 +78,65 @@ export function Action({
     method = "post",
     value,
 }: Action) {
+    // const context = useContext(PageContext);
+    // console.log("Context", context);
     className ??=
         "bg-zinc-800 text-zinc-400 rounded px-2 py-1 border border-zinc-500";
     children ??= name;
     return (
-        <button
-            className={className}
-            name="action"
-            value={name}
-            type={primary ? "submit" : "button"}
-            onClick={(event) => {
-                const form = event.currentTarget.form!;
-                const input = document.createElement("input");
-                input.type = "hidden";
-                input.name = "actionValue";
-                input.value = value?.toString() ?? "";
-                form.appendChild(input);
-                // SUBMIT FORM HERE
-                form.removeChild(input);
-            }}
-        >
-            {children}
-        </button>
+        <PageContext.Consumer>
+            {(context) => (
+                <button
+                    className={className}
+                    name="action"
+                    value={name}
+                    type={primary ? "submit" : "button"}
+                    onClick={(event) => {
+                        event.preventDefault();
+                        submit(
+                            context,
+                            event.currentTarget.form!,
+                            method,
+                            name,
+                        );
+                    }}
+                >
+                    {children}
+                </button>
+            )}
+        </PageContext.Consumer>
     );
+}
+
+async function submit(
+    context: PageContext,
+    form: HTMLFormElement,
+    method: string,
+    action: string,
+) {
+    let input = new FormData(form);
+    let output: any = {};
+    input.forEach((value, key) => (output[key] = value));
+    output.action = action;
+    // const hiddenForm = document.createElement("form");
+    // const hiddenInput = document.createElement("input");
+    // hiddenForm.method = method;
+    // hiddenInput.type = "hidden";
+    // hiddenInput.name = "input";
+    // hiddenInput.value = JSON.stringify(output);
+    // hiddenForm.appendChild(hiddenInput);
+    // document.body.appendChild(hiddenForm);
+    // hiddenForm.submit();
+    // ------------
+    let response = await fetch(window.location.href, {
+        method,
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(output),
+    });
+    const result = await response.json();
+    console.log(result);
+    context.setInput(result);
+    // console.log(await response.json());
 }
