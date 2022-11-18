@@ -25,3 +25,12 @@ export async function css(url: string) {
     }
     return new Response(stdout, { headers });
 }
+
+export async function buildCss() {
+    const path = "app/index.css";
+    if (!tailwind) {
+        spawnSync(["cp", path, ".cache/index.css"]);
+        return;
+    }
+    spawnSync(["tailwind", "-i", path, "-o", ".cache/index.css"]);
+}
