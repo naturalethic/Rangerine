@@ -5,17 +5,14 @@ import {
     ServeOptions,
     Server,
     ServerWebSocket,
-    spawn,
     spawnSync,
 } from "bun";
 import glob from "fast-glob";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import mime from "mime-types";
 import { resolve } from "path";
 import { error, info, warn } from "~/log";
-import { css, esm, hydrate, render, renderData } from "~/render";
-import { buildCss } from "~/render/css";
-import { runtime } from "~/render/esm";
+import { render, renderData } from "~/render";
 
 declare global {
     var server: Server;
@@ -62,7 +59,19 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             const headers: Record<string, string> = {};
             if (/\./.test(url.pathname)) {
                 if (/[a-z-]+.tsx$/.test(url.pathname)) {
-                    return await esm(url.pathname);
+                    const path = `.cache${url.pathname}`.replace(".tsx", ".js");
+                    if (!existsSync(path)) {
+                        return new Response("Not found", { status: 404 });
+                    }
+                    const code = readFileSync(path, "utf-8").replace(
+                        `from "react/jsx-runtime";`,
+                        `from "/_runtime";`,
+                    );
+                    return new Response(code, {
+                        headers: {
+                            "Content-Type": "application/javascript",
+                        },
+                    });
                 } else if (
                     url.pathname.endsWith(".ts") ||
                     url.pathname.endsWith(".tsx")
@@ -74,7 +83,6 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     headers["Content-Type"] = mimetype;
                 }
                 if (url.pathname.endsWith(".css")) {
-                    // return await css(url.pathname);
                     // XXX: Don't assume index here.
                     return new Response(file(".cache/index.css"), { headers });
                 }
@@ -98,9 +106,21 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     context,
                 );
                 await destroyContext(context);
-                return await hydrate(data);
+                const code = readFileSync(".cache/client", "utf-8").replace(
+                    "const data = {}",
+                    `const data = ${JSON.stringify(data)}`,
+                );
+                return new Response(code, {
+                    headers: {
+                        "Content-Type": "application/javascript",
+                    },
+                });
             } else if (url.pathname === "/_runtime") {
-                return await runtime();
+                return new Response(file(".cache/runtime"), {
+                    headers: {
+                        "Content-Type": "application/javascript",
+                    },
+                });
             } else {
                 try {
                     const context = await createContext();
@@ -178,4 +198,15 @@ function buildRoutes() {
         "--outdir=.cache",
         ...glob.sync("app/**/*.ts*"),
     ]);
+}
+
+export async function buildCss() {
+    const tailwind =
+        existsSync("tailwind.config.js") || existsSync("tailwind.config.cjs");
+    const path = "app/index.css";
+    if (!tailwind) {
+        spawnSync(["cp", path, ".cache/index.css"]);
+        return;
+    }
+    spawnSync(["tailwind", "-i", path, "-o", ".cache/index.css"]);
 }
