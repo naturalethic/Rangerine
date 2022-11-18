@@ -11,7 +11,8 @@ import {
 import glob from "fast-glob";
 import { existsSync } from "fs";
 import mime from "mime-types";
-import { info } from "~/log";
+import { resolve } from "path";
+import { error, info, warn } from "~/log";
 import { css, esm, hydrate, render, renderData } from "~/render";
 import { buildCss } from "~/render/css";
 import { runtime } from "~/render/esm";
@@ -90,17 +91,25 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     return new Response("Bad Request", { status: 400 });
                 }
                 const refererUrl = new URL(referer);
+                const context = await createContext();
                 const data = await renderData(
                     request.method,
                     refererUrl.pathname,
+                    context,
                 );
-                info("DATA", data);
+                await destroyContext(context);
                 return await hydrate(data);
             } else if (url.pathname === "/_runtime") {
                 return await runtime();
             } else {
                 try {
-                    const html = await render(request.method, url.pathname);
+                    const context = await createContext();
+                    const html = await render(
+                        request.method,
+                        url.pathname,
+                        context,
+                    );
+                    await destroyContext(context);
                     headers["Content-Type"] = "text/html";
                     return new Response(html, { headers });
                 } catch (e) {
@@ -111,6 +120,35 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             }
         },
     };
+}
+
+async function createContext() {
+    try {
+        let module: any;
+        try {
+            module = await import(resolve(process.cwd(), "lib/context.ts"));
+        } catch (_) {
+            warn("No context module found");
+        }
+        return await module.createContext();
+    } catch (e: any) {
+        error("Context:", e.message);
+    }
+    return {};
+}
+
+async function destroyContext(context: any) {
+    try {
+        let module: any;
+        try {
+            module = await import(resolve(process.cwd(), "lib/context.ts"));
+        } catch (_) {
+            warn("No context module found");
+        }
+        await module.destroyContext(context);
+    } catch (e: any) {
+        error("Context:", e.message);
+    }
 }
 
 function buildClient() {

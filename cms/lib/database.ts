@@ -77,7 +77,7 @@ export class Connection {
     }
 }
 
-class Pool {
+export class Pool {
     max: number;
     connections: Connection[];
     waitlist: ((connection: Connection) => void)[];
@@ -113,30 +113,11 @@ class Pool {
         });
     }
 
-    async release(connection: Connection) {
+    release(connection: Connection) {
         if (this.waitlist.length) {
             this.waitlist.shift()!(connection);
         } else {
             connection.acquired = false;
         }
-    }
-}
-
-declare global {
-    var pool: Pool;
-}
-
-if (typeof pool === "undefined") {
-    pool = new Pool(10);
-}
-
-export async function withDb<T>(
-    fn: (db: Connection) => Promise<any>,
-): Promise<T> {
-    const db = await pool.acquire();
-    try {
-        return await fn(db);
-    } finally {
-        await pool.release(db);
     }
 }

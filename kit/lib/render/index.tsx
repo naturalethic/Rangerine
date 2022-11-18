@@ -24,6 +24,7 @@ interface UrlReducerParams<T> {
     Component: any;
     content: T;
     data?: any;
+    context?: any;
 }
 
 interface UrlReducer<T> {
@@ -34,6 +35,7 @@ async function reduce<T>(
     method: string,
     url: string,
     content: any,
+    context: any,
     fn: UrlReducer<T>,
 ) {
     return await reduceUrl<any>(
@@ -41,7 +43,10 @@ async function reduce<T>(
         async ({ path, segment }) => {
             const module = await import(`${process.cwd()}/app${path}`);
             const data = {
-                get: method === "GET" ? await module.api?.get?.() : undefined,
+                get:
+                    method === "GET"
+                        ? await module.api?.get?.(context)
+                        : undefined,
             };
             const Component = module.default;
             return await fn({
@@ -58,22 +63,24 @@ async function reduce<T>(
     );
 }
 
-export async function renderData(method: string, url: string) {
+export async function renderData(method: string, url: string, context: any) {
     return await reduce<any>(
         method,
         url,
         {},
+        context,
         async ({ segment, content, data }) => {
             content[segment] = data;
             return content;
         },
     );
 }
-export async function render(method: string, url: string) {
+export async function render(method: string, url: string, context: any) {
     const content = await reduce<any>(
         method,
         url,
         undefined,
+        context,
         async ({ Component, content, data }) => {
             return (
                 <Suspense>

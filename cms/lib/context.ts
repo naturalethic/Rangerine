@@ -1,11 +1,19 @@
 import { Api, Page as KitPage } from "@tangerine/kit";
-import { Connection } from "./database";
+import { Connection, Pool } from "./database";
 import { createSession } from "./session";
 import { Session } from "./types";
 
-export { Api } from "@tangerine/kit";
+export type { Api } from "@tangerine/kit";
 
 export type Page<A> = KitPage<Context, Api<A>>;
+
+declare global {
+    var pool: Pool;
+}
+
+if (!globalThis.pool) {
+    globalThis.pool = new Pool(10);
+}
 
 export interface Context {
     db: Connection;
@@ -13,10 +21,12 @@ export interface Context {
 }
 
 export async function createContext(): Promise<Context> {
-    const db = new Connection();
-    await db.connect();
+    const db = await globalThis.pool.acquire();
     const session = await createSession(db);
     return { db, session };
 }
 
-export async function destroyContext(context: Context) {}
+export async function destroyContext(context: Context) {
+    // save session
+    globalThis.pool.release(context.db);
+}

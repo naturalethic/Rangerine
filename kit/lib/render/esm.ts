@@ -14,8 +14,8 @@ export async function esm(path: string) {
     };
     try {
         const code = readFileSync(path, "utf-8").replace(
-            `import { jsxs } from "react/jsx-runtime";`,
-            `import { jsxs } from "/_runtime";`,
+            `from "react/jsx-runtime";`,
+            `from "/_runtime";`,
         );
         // const code = (
         //     await build({
