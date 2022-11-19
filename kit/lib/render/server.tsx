@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { renderToReadableStream, renderToString } from "react-dom/server";
+import { renderToReadableStream } from "react-dom/server";
 import Document from "./document";
 import { reduceUrl } from "./helper";
 

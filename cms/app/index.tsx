@@ -12,10 +12,10 @@ export const api = {
     },
 };
 
-export default function ({ children, input }: Page<typeof api>) {
-    // useEffect(() => {
-    //     console.log("input", input);
-    // }, [input]);
+export default function Root({ children, input }: Page<typeof api>) {
+    useEffect(() => {
+        console.log("input", input);
+    }, [input]);
     return (
         <div className="flex flex-col items-center justify-center h-screen space-y-4 bg-zinc-700 font-iosevka text-zinc-200">
             <div className="text-orange-600 text-6xl font-sacramento mb-10">

@@ -1,3 +1,4 @@
+import "~/render/client";
 import {
     file,
     serve,
@@ -6,9 +7,10 @@ import {
     Server,
     ServerWebSocket,
     spawnSync,
+    SyncSubprocess,
 } from "bun";
 import glob from "fast-glob";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync, renameSync, rmSync } from "fs";
 import mime from "mime-types";
 import { resolve } from "path";
 import { error, info, warn } from "~/log";
@@ -19,20 +21,19 @@ declare global {
     var sockets: ServerWebSocket[];
 }
 
+const project = process.cwd().split("/").pop();
+
 export default function () {
     const hostname = "0.0.0.0";
     const port = 7777;
     if (globalThis.server) {
         info(`Reloading development server at ${hostname}:${port}`);
-        buildRoutes();
-        buildCss();
+        build();
         server.reload(handler({ hostname, port }));
         sockets.forEach((socket) => socket.send("reload"));
     } else {
         info(`Starting development server at ${hostname}:${port}`);
-        buildClient();
-        buildRoutes();
-        buildCss();
+        build();
         globalThis.server = serve(handler({ hostname, port }));
         globalThis.sockets = [];
     }
@@ -58,7 +59,10 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             const headers: Record<string, string> = {};
             if (/\./.test(url.pathname)) {
                 if (/[a-z-]+.tsx$/.test(url.pathname)) {
-                    const path = `.cache${url.pathname}`.replace(".tsx", ".js");
+                    const path = `.cache/${project}/app${url.pathname}`.replace(
+                        ".tsx",
+                        ".js",
+                    );
                     if (!existsSync(path)) {
                         return new Response("Not found", { status: 404 });
                     }
@@ -106,7 +110,10 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                         context,
                     );
                     await destroyContext(context);
-                    const code = readFileSync(".cache/client", "utf-8").replace(
+                    const code = readFileSync(
+                        ".cache/kit/lib/render/client.js",
+                        "utf-8",
+                    ).replace(
                         "const data = {}",
                         `const data = ${JSON.stringify(data)}`,
                     );
@@ -195,34 +202,34 @@ async function destroyContext(context: any) {
     }
 }
 
-function buildClient() {
-    spawnSync([
-        "esbuild",
-        "--bundle",
-        "--format=esm",
-        "--outfile=.cache/client",
-        import.meta.resolveSync("../render/client.tsx"),
-    ]);
-}
-
-function buildRoutes() {
-    spawnSync([
-        "esbuild",
-        "--format=esm",
-        "--bundle",
-        "--splitting",
-        "--outdir=.cache",
-        ...glob.sync("app/**/*.ts*"),
-    ]);
-}
-
-export async function buildCss() {
+function build() {
+    rmSync(".cache", { recursive: true });
+    reportError(
+        spawnSync([
+            "esbuild",
+            "--format=esm",
+            "--bundle",
+            "--log-level=error",
+            "--splitting",
+            "--outdir=.cache",
+            ...[
+                ...glob.sync("app/**/*.ts*"),
+                import.meta.resolveSync("../render/client.tsx"),
+            ],
+        ]),
+    );
     const tailwind =
         existsSync("tailwind.config.js") || existsSync("tailwind.config.cjs");
     const path = "app/index.css";
     if (!tailwind) {
-        spawnSync(["cp", path, ".cache/index.css"]);
+        reportError(spawnSync(["cp", path, ".cache/index.css"]));
         return;
     }
-    spawnSync(["tailwind", "-i", path, "-o", ".cache/index.css"]);
+    reportError(spawnSync(["tailwind", "-i", path, "-o", ".cache/index.css"]));
+}
+
+function reportError({ stderr, exitCode }: SyncSubprocess) {
+    if (exitCode !== 0 && stderr) {
+        error(stderr.toString());
+    }
 }

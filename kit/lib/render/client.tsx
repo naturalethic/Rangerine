@@ -19,13 +19,6 @@ async function render() {
     );
 }
 
-render().then((content: any) => {
-    hydrateRoot(
-        document.querySelector("main")!,
-        <StrictMode>{content}</StrictMode>,
-    );
-});
-
 declare global {
     interface Window {
         socket: any;
@@ -50,4 +43,12 @@ function connect() {
     window.socket = socket;
 }
 
-connect();
+if (typeof window !== "undefined") {
+    render().then((content: any) => {
+        hydrateRoot(
+            document.querySelector("main")!,
+            <StrictMode>{content}</StrictMode>,
+        );
+    });
+    connect();
+}
