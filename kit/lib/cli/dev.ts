@@ -1,4 +1,4 @@
-import "~/render/client";
+import "~/render/client"; // XXX: Import so that hot reload will respond to changes in it.
 import {
     file,
     serve,
@@ -10,9 +10,10 @@ import {
     SyncSubprocess,
 } from "bun";
 import glob from "fast-glob";
-import { existsSync, readFileSync, renameSync, rmSync } from "fs";
+import { existsSync, readFileSync, rmSync } from "fs";
 import mime from "mime-types";
 import { resolve } from "path";
+import { createContext, destroyContext } from "~/context";
 import { error, info, warn } from "~/log";
 import { leafData, renderData, renderServer } from "~/render/server";
 
@@ -56,7 +57,9 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             }
             const url = new URL(request.url);
             info(`${request.method} ${url.pathname}`);
-            const headers: Record<string, string> = {};
+            const headers: Record<string, string> = {
+                "Content-Type": "application/javascript",
+            };
             if (/\./.test(url.pathname)) {
                 if (/[a-z-]+.tsx$/.test(url.pathname)) {
                     const path = `.cache/${project}/app${url.pathname}`.replace(
@@ -66,18 +69,10 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                     if (!existsSync(path)) {
                         return new Response("Not found", { status: 404 });
                     }
-                    return new Response(file(path), {
-                        headers: {
-                            "Content-Type": "application/javascript",
-                        },
-                    });
+                    return new Response(file(path), { headers });
                 } else if (url.pathname.includes("chunk")) {
                     const path = `.cache${url.pathname}`;
-                    return new Response(file(path), {
-                        headers: {
-                            "Content-Type": "application/javascript",
-                        },
-                    });
+                    return new Response(file(path), { headers });
                 } else if (url.pathname.endsWith(".tsx")) {
                     return new Response("Not found", { status: 404 });
                 }
@@ -103,7 +98,8 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                         return new Response("Bad Request", { status: 400 });
                     }
                     const refererUrl = new URL(referer);
-                    const context = await createContext(refererUrl);
+                    const context = await createContext(request);
+                    headers["Set-Cookie"] = `session=${context.session.id}`;
                     const data = await renderData(
                         request.method,
                         refererUrl.pathname,
@@ -117,11 +113,7 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                         "const data = {}",
                         `const data = ${JSON.stringify(data)}`,
                     );
-                    return new Response(code, {
-                        headers: {
-                            "Content-Type": "application/javascript",
-                        },
-                    });
+                    return new Response(code, { headers });
                 } catch (e: any) {
                     error(e);
                     return new Response("Internal Server Error", {
@@ -130,7 +122,7 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                 }
             } else {
                 try {
-                    const context = await createContext(new URL(request.url));
+                    const context = await createContext(request);
                     try {
                         if (request.method === "GET") {
                             const html = await renderServer(
@@ -148,7 +140,6 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                                 context,
                                 input,
                             );
-                            headers["Content-Type"] = "application/json";
                             return new Response(JSON.stringify(data), {
                                 headers,
                             });
@@ -171,35 +162,6 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             }
         },
     };
-}
-
-async function createContext(url: URL) {
-    try {
-        let module: any;
-        try {
-            module = await import(resolve(process.cwd(), "lib/context.ts"));
-        } catch (_) {
-            warn("No context module found");
-        }
-        return await module.createContext(url);
-    } catch (e: any) {
-        error("Context:", e.message);
-    }
-    return {};
-}
-
-async function destroyContext(context: any) {
-    try {
-        let module: any;
-        try {
-            module = await import(resolve(process.cwd(), "lib/context.ts"));
-        } catch (_) {
-            warn("No context module found");
-        }
-        await module.destroyContext(context);
-    } catch (e: any) {
-        error("Context:", e.message);
-    }
 }
 
 function build() {

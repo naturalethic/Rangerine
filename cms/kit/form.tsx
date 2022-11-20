@@ -1,4 +1,4 @@
-import { PageContext } from "@tangerine/kit";
+import { RouteContext } from "@tangerine/kit";
 import path from "object-path";
 
 interface Form {
@@ -84,7 +84,7 @@ export function Action({
         "bg-zinc-800 text-zinc-400 rounded px-2 py-1 border border-zinc-500";
     children ??= name;
     return (
-        <PageContext.Consumer>
+        <RouteContext.Consumer>
             {(context) => (
                 <button
                     className={className}
@@ -104,12 +104,12 @@ export function Action({
                     {children}
                 </button>
             )}
-        </PageContext.Consumer>
+        </RouteContext.Consumer>
     );
 }
 
 async function submit(
-    context: PageContext,
+    context: RouteContext,
     form: HTMLFormElement,
     method: string,
     action: string,

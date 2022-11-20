@@ -98,7 +98,9 @@ export async function renderServer(method: string, url: string, context: any) {
         async ({ Component, content, data }) => {
             return (
                 <Suspense>
-                    <Component input={data}>{content}</Component>
+                    <Component get={data.get} post={data.post}>
+                        {content}
+                    </Component>
                 </Suspense>
             );
         },

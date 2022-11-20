@@ -2,7 +2,7 @@
 
 import { StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { PageProvider } from "~/page";
+import { RouteProvider } from "~/route";
 import { reduceUrl } from "./helper";
 
 async function render() {
@@ -11,9 +11,9 @@ async function render() {
         { url: location.pathname, data },
         async ({ path, content, data }) => {
             return (
-                <PageProvider path={path} data={data}>
+                <RouteProvider path={path} data={data}>
                     {content}
-                </PageProvider>
+                </RouteProvider>
             );
         },
     );

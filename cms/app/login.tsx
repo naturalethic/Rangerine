@@ -1,6 +1,6 @@
+import type { Context, Route } from "@tangerine/kit";
 import { useEffect, useState } from "react";
 import { Action, Form, Text } from "~/kit/form";
-import { Context, Page } from "~/lib/context";
 
 interface Post {
     username: string;
@@ -19,17 +19,17 @@ export const api = {
     },
 };
 
-export default function ({ input }: Page<typeof api>) {
+export default function ({ get, post }: Route<typeof api>) {
     return (
         <Form>
-            <Text name="username" defaultValue={input.get?.username} />
+            <Text name="username" defaultValue={get?.username} />
             <Text
                 name="password"
-                defaultValue={input.get?.password}
+                defaultValue={get?.password}
                 redacted={true}
             />
             <Action name="login">Foo</Action>
-            <pre>{JSON.stringify(input.post)}</pre>
+            <pre>{JSON.stringify(post)}</pre>
         </Form>
     );
 }
