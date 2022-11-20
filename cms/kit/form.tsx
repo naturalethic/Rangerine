@@ -3,18 +3,21 @@ import path from "object-path";
 
 interface Form {
     children?: React.ReactNode;
+    className?: string;
+    error?: string;
 }
 
-export function Form({ children }: Form) {
+export function Form({ children, className = "", error }: Form) {
     return (
         <form
-            className="flex flex-col space-y-2"
+            className={`flex flex-col space-y-2 ${className}`}
             onSubmit={(event) => {
                 event.preventDefault();
                 console.log(event);
             }}
         >
             {children}
+            {error && <div className="text-red-500 text-center">{error}</div>}
         </form>
     );
 }
@@ -24,8 +27,9 @@ interface Text {
     value?: string;
     defaultValue?: string;
     label?: string;
-    errors?: string[];
+    error?: string;
     redacted?: boolean;
+    className?: string;
 }
 
 export function Text({
@@ -33,8 +37,9 @@ export function Text({
     value,
     defaultValue,
     label,
-    errors,
+    error,
     redacted = false,
+    className = "",
 }: Text) {
     // label ??= humanize(name.split(".").pop()!);
     label ??= name;
@@ -44,19 +49,13 @@ export function Text({
                 <div>{label}</div>
             </div>
             <input
-                className="border rounded border-zinc-400 bg-zinc-800 text-zinc-400 px-2 py-1"
+                className={`border rounded border-zinc-400 bg-zinc-800 text-zinc-400 px-2 py-1 ${className}`}
                 type={redacted ? "password" : "text"}
                 name={name}
                 value={value}
                 defaultValue={defaultValue}
             />
-            {errors && (
-                <div className="text-red-500">
-                    {errors.map((error, i) => (
-                        <div key={i}>{error}</div>
-                    ))}
-                </div>
-            )}
+            {error && <div className="text-red-500 text-center">{error}</div>}
         </label>
     );
 }
@@ -78,11 +77,10 @@ export function Action({
     method = "post",
     value,
 }: Action) {
-    // const context = useContext(PageContext);
-    // console.log("Context", context);
     className ??=
         "bg-zinc-800 text-zinc-400 rounded px-2 py-1 border border-zinc-500";
     children ??= name;
+    method = method.toLowerCase();
     return (
         <RouteContext.Consumer>
             {(context) => (
@@ -116,18 +114,8 @@ async function submit(
 ) {
     let input = new FormData(form);
     let output: any = {};
-    input.forEach((value, key) => (output[key] = value));
+    input.forEach((value, key) => path.set(output, key, value));
     output.action = action;
-    // const hiddenForm = document.createElement("form");
-    // const hiddenInput = document.createElement("input");
-    // hiddenForm.method = method;
-    // hiddenInput.type = "hidden";
-    // hiddenInput.name = "input";
-    // hiddenInput.value = JSON.stringify(output);
-    // hiddenForm.appendChild(hiddenInput);
-    // document.body.appendChild(hiddenForm);
-    // hiddenForm.submit();
-    // ------------
     let response = await fetch(window.location.href, {
         method,
         headers: {
@@ -135,8 +123,10 @@ async function submit(
         },
         body: JSON.stringify(output),
     });
-    const result = await response.json();
-    console.log(result);
-    context.setInput(result);
-    // console.log(await response.json());
+    if (response.redirected) {
+        const url = new URL(response.url);
+    } else {
+        const result = await response.json();
+        method === "post" && context.setPost(result.post);
+    }
 }

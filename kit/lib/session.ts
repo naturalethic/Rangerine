@@ -12,5 +12,5 @@ export async function readSession(
     db: Connection,
     id: string,
 ): Promise<Session> {
-    return await db.select<Session>("_session", id);
+    return await db.select<Session>(id);
 }

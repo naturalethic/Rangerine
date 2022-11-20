@@ -1,5 +1,6 @@
+import type { RecordError } from "surrealdb.js/types/errors";
 import { Connection, Pool } from "./database";
-import { createSession } from "./session";
+import { createSession, readSession } from "./session";
 import { Session } from "./types";
 
 declare global {
@@ -16,20 +17,23 @@ export interface Context {
     url: URL;
 }
 
-export async function createContext(request: Request): Promise<Context> {
-    const url = new URL(request.url);
+export async function createContext(
+    url: URL,
+    sessionId?: string,
+): Promise<Context> {
     const db = await globalThis.pool.acquire();
-    const session = await createSession(db);
+    let session;
+    try {
+        session = sessionId
+            ? await readSession(db, sessionId)
+            : await createSession(db);
+    } catch (e) {
+        session = await createSession(db);
+    }
     return { db, session, url };
 }
 
-export async function destroyContext(context: Context) {
-    // save session
-    globalThis.pool.release(context.db);
+export async function destroyContext({ db, session }: Context) {
+    await db.update(session);
+    globalThis.pool.release(db);
 }
-
-// export async function createContext(url: URL): Promise<Context> {
-//     const db = await globalThis.pool.acquire();
-//     const session = await createSession(db);
-//     return { db, session, url };
-// }

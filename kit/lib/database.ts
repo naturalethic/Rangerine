@@ -41,16 +41,13 @@ export class Connection {
         return (await this.query<T>(query, vars))[0];
     }
 
-    async select<T>(thing: string): Promise<T[]>;
+    async select<T>(thing: string): Promise<T>;
     async select<T>(table: string, id: string): Promise<T>;
     async select<T>(thing_or_table: string, id?: string): Promise<T[] | T> {
         const result = id
             ? await this.db.select(packId(thing_or_table, id))
             : await this.db.select(thing_or_table);
-        if (id || thing_or_table.includes(":")) {
-            return result[0] as T;
-        }
-        return result as T[];
+        return result[0] as T;
     }
 
     async change<T extends Identified>(record: T) {

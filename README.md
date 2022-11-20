@@ -1,3 +1,4 @@
-*** TODO
-- `esbuild` currently causes segfaults, so it's commented out and we spawn builders when necessary.
-- Should probably pre-render css files too, tailwind is slow.
+### TODO
+- Route children needs to be aware of the route tree, switch on path.
+- Need Link component, and history management.
+- Need programatic routing (for post redirect for example).

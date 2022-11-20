@@ -14,6 +14,7 @@
     },
     "typings": "lib/index.ts",
     "devDependencies": {
+        "@types/cookie": "^0.5.1",
         "@types/mime-types": "^2.1.1",
         "@types/node": "^18.11.9",
         "@types/react": "^18.0.25",
@@ -24,6 +25,7 @@
     "dependencies": {
         "@types/object-path": "^0.11.1",
         "chalk": "^5.1.2",
+        "cookie": "^0.5.0",
         "esbuild": "^0.15.14",
         "fast-glob": "^3.2.12",
         "mime-types": "^2.1.35",

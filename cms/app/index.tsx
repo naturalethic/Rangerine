@@ -2,12 +2,11 @@ import type { Context, Route } from "@tangerine/kit";
 
 export const api = {
     get: async (context: Context) => {
-        // if (context.url.pathname !== "/login") {
-        //     if (!context.session.data.identity) {
-        //         throw { redirect: "/login" };
-        //     }
-        // }
-        return {};
+        if (context.url.pathname !== "/login") {
+            if (!context.session.data.identity) {
+                throw { redirect: "/login" };
+            }
+        }
     },
 };
 

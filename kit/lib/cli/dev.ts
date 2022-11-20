@@ -9,12 +9,12 @@ import {
     spawnSync,
     SyncSubprocess,
 } from "bun";
+import cookie from "cookie";
 import glob from "fast-glob";
 import { existsSync, readFileSync, rmSync } from "fs";
 import mime from "mime-types";
-import { resolve } from "path";
 import { createContext, destroyContext } from "~/context";
-import { error, info, warn } from "~/log";
+import { error, info } from "~/log";
 import { leafData, renderData, renderServer } from "~/render/server";
 
 declare global {
@@ -52,6 +52,9 @@ function handler(options: Partial<Serve<ServeOptions>>) {
             },
         },
         async fetch(request: Request, server: Server) {
+            const sessionId = cookie.parse(
+                request.headers.get("cookie") ?? "",
+            ).session;
             if (server.upgrade(request)) {
                 return new Response(null, { status: 101 });
             }
@@ -98,7 +101,7 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                         return new Response("Bad Request", { status: 400 });
                     }
                     const refererUrl = new URL(referer);
-                    const context = await createContext(request);
+                    const context = await createContext(refererUrl, sessionId);
                     headers["Set-Cookie"] = `session=${context.session.id}`;
                     const data = await renderData(
                         request.method,
@@ -122,7 +125,11 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                 }
             } else {
                 try {
-                    const context = await createContext(request);
+                    const context = await createContext(
+                        new URL(request.url),
+                        sessionId,
+                    );
+                    headers["Set-Cookie"] = `session=${context.session.id}`;
                     try {
                         if (request.method === "GET") {
                             const html = await renderServer(
