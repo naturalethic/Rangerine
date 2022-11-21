@@ -3,6 +3,7 @@ import React, {
     lazy,
     Suspense,
     useContext,
+    useEffect,
     useState,
 } from "react";
 import { ApiOutput } from "./api";
@@ -43,11 +44,19 @@ interface RouterProvider {
 
 export function RouterProvider({ children }: RouterProvider) {
     const [path, setPath] = useState(location.pathname);
+    useEffect(() => {
+        window.addEventListener("popstate", () => {
+            setPath(location.pathname);
+        });
+    }, []);
     return (
         <RouterContext.Provider
             value={{
                 path,
-                setPath,
+                setPath: (path) => {
+                    history.pushState({ path }, "", path);
+                    setPath(path);
+                },
             }}
         >
             {children}
@@ -70,14 +79,14 @@ export const RouteContext = createContext({
 });
 
 interface RouteProvider {
+    Component: any;
     subroutes: JSX.Element[];
-    file: string;
     data: any;
 }
 
 export function RouteProvider({
+    Component,
     subroutes,
-    file,
     data = { get: {}, post: {} },
 }: RouteProvider) {
     const [get, setGet] = useState(data.get);
@@ -91,22 +100,21 @@ export function RouteProvider({
                 setPost,
             }}
         >
-            <RouteWrapper file={file} subroutes={subroutes} />
+            <RouteWrapper Component={Component} subroutes={subroutes} />
         </RouteContext.Provider>
     );
 }
 
 interface RouteWrapper {
+    Component: any;
     subroutes: JSX.Element[];
-    file: string;
 }
 
-function RouteWrapper({ subroutes, file }: RouteWrapper) {
-    const Component = lazy(() => import(file));
+function RouteWrapper({ Component, subroutes }: RouteWrapper) {
     const { path: currentPath } = useContext(RouterContext);
     const { get, post } = useContext(RouteContext);
     return (
-        <Suspense>
+        <Suspense fallback="Loading...">
             <Component get={get} post={post}>
                 {subroutes.filter((child) =>
                     currentPath.startsWith(child.key as string),
