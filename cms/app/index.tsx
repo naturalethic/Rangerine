@@ -1,4 +1,5 @@
 import type { Context, Route } from "@tangerine/kit";
+import { Link } from "@tangerine/kit";
 
 export const api = {
     get: async (context: Context) => {
@@ -17,6 +18,8 @@ export default function ({ children }: Route) {
                 Tangerine
             </div>
             {children}
+            <Link path="/admin">Admin</Link>
+            <Link path="/login">Login</Link>
         </div>
     );
 }

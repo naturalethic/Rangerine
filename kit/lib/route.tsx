@@ -1,6 +1,59 @@
-import React, { createContext, lazy, Suspense, useState } from "react";
+import React, {
+    createContext,
+    lazy,
+    Suspense,
+    useContext,
+    useState,
+} from "react";
 import { ApiOutput } from "./api";
 import { Context } from "./context";
+
+export interface Link {
+    children: React.ReactNode;
+    path: string;
+}
+
+export function Link({ children, path }: Link) {
+    const { setPath } = useContext(RouterContext);
+    return (
+        <button
+            onClick={(e) => {
+                e.preventDefault();
+                setPath(path);
+            }}
+        >
+            {children}
+        </button>
+    );
+}
+
+export interface RouterContext {
+    path: string;
+    setPath: (path: string) => void;
+}
+
+export const RouterContext = createContext({
+    path: "",
+    setPath: (_: string) => {},
+});
+
+interface RouterProvider {
+    children: React.ReactNode;
+}
+
+export function RouterProvider({ children }: RouterProvider) {
+    const [path, setPath] = useState(location.pathname);
+    return (
+        <RouterContext.Provider
+            value={{
+                path,
+                setPath,
+            }}
+        >
+            {children}
+        </RouterContext.Provider>
+    );
+}
 
 export interface RouteContext {
     get: any;
@@ -18,14 +71,12 @@ export const RouteContext = createContext({
 
 interface RouteProvider {
     subroutes: JSX.Element[];
-    path: string;
     file: string;
     data: any;
 }
 
 export function RouteProvider({
     subroutes,
-    path,
     file,
     data = { get: {}, post: {} },
 }: RouteProvider) {
@@ -40,31 +91,28 @@ export function RouteProvider({
                 setPost,
             }}
         >
-            <RouteWrapper path={path} file={file} subroutes={subroutes} />
+            <RouteWrapper file={file} subroutes={subroutes} />
         </RouteContext.Provider>
     );
 }
 
 interface RouteWrapper {
     subroutes: JSX.Element[];
-    path: string;
     file: string;
 }
 
-function RouteWrapper({ subroutes, path, file }: RouteWrapper) {
+function RouteWrapper({ subroutes, file }: RouteWrapper) {
     const Component = lazy(() => import(file));
+    const { path: currentPath } = useContext(RouterContext);
+    const { get, post } = useContext(RouteContext);
     return (
-        <RouteContext.Consumer>
-            {(context) => (
-                <Suspense>
-                    <Component get={context.get} post={context.post}>
-                        {subroutes.filter((child) =>
-                            location.pathname.startsWith(child.props.path),
-                        )}
-                    </Component>
-                </Suspense>
-            )}
-        </RouteContext.Consumer>
+        <Suspense>
+            <Component get={get} post={post}>
+                {subroutes.filter((child) =>
+                    currentPath.startsWith(child.key as string),
+                )}
+            </Component>
+        </Suspense>
     );
 }
 

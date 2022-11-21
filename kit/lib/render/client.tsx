@@ -2,7 +2,7 @@
 
 import { StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
-import { RouteProvider } from "~/route";
+import { RouteProvider, RouterProvider } from "~/route";
 import { AppNode } from "./helper";
 
 function renderApp(tree: AppNode, data: Record<string, any>) {
@@ -13,7 +13,6 @@ function renderApp(tree: AppNode, data: Record<string, any>) {
     return (
         <RouteProvider
             key={tree.url}
-            path={tree.url}
             file={tree.file.replace(/^app/, "")}
             data={data[tree.url]}
             subroutes={subroutes}
@@ -56,7 +55,9 @@ if (typeof window !== "undefined") {
     render().then((content: any) => {
         hydrateRoot(
             document.querySelector("main")!,
-            <StrictMode>{content}</StrictMode>,
+            <StrictMode>
+                <RouterProvider>{content}</RouterProvider>
+            </StrictMode>,
         );
     });
     connect();
