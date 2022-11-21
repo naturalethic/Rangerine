@@ -1,4 +1,4 @@
-import { createContext, lazy, Suspense, useState } from "react";
+import React, { createContext, lazy, Suspense, useState } from "react";
 import { ApiOutput } from "./api";
 import { Context } from "./context";
 
@@ -17,14 +17,16 @@ export const RouteContext = createContext({
 });
 
 interface RouteProvider {
-    children: React.ReactNode;
+    subroutes: JSX.Element[];
     path: string;
+    file: string;
     data: any;
 }
 
 export function RouteProvider({
-    children,
+    subroutes,
     path,
+    file,
     data = { get: {}, post: {} },
 }: RouteProvider) {
     const [get, setGet] = useState(data.get);
@@ -38,24 +40,27 @@ export function RouteProvider({
                 setPost,
             }}
         >
-            <RouteWrapper path={path}>{children}</RouteWrapper>
+            <RouteWrapper path={path} file={file} subroutes={subroutes} />
         </RouteContext.Provider>
     );
 }
 
 interface RouteWrapper {
-    children: React.ReactNode;
+    subroutes: JSX.Element[];
     path: string;
+    file: string;
 }
 
-function RouteWrapper({ children, path }: RouteWrapper) {
-    const Component = lazy(() => import(`${path}.tsx`));
+function RouteWrapper({ subroutes, path, file }: RouteWrapper) {
+    const Component = lazy(() => import(file));
     return (
         <RouteContext.Consumer>
             {(context) => (
                 <Suspense>
                     <Component get={context.get} post={context.post}>
-                        {children}
+                        {subroutes.filter((child) =>
+                            location.pathname.startsWith(child.props.path),
+                        )}
                     </Component>
                 </Suspense>
             )}

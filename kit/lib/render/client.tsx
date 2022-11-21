@@ -3,20 +3,29 @@
 import { StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
 import { RouteProvider } from "~/route";
-import { reduceUrl } from "./helper";
+import { AppNode } from "./helper";
+
+function renderApp(tree: AppNode, data: Record<string, any>) {
+    const subroutes = [];
+    for (const child of tree.children) {
+        subroutes.push(renderApp(child, data));
+    }
+    return (
+        <RouteProvider
+            key={tree.url}
+            path={tree.url}
+            file={tree.file.replace(/^app/, "")}
+            data={data[tree.url]}
+            subroutes={subroutes}
+        />
+    );
+}
 
 async function render() {
+    // @ts-ignore
+    const tree: AppNode = {};
     const data: Record<string, any> = {};
-    return await reduceUrl<any>(
-        { url: location.pathname, data },
-        async ({ path, content, data }) => {
-            return (
-                <RouteProvider path={path} data={data}>
-                    {content}
-                </RouteProvider>
-            );
-        },
-    );
+    return renderApp(tree, data);
 }
 
 declare global {

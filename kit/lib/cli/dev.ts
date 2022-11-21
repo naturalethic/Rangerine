@@ -15,6 +15,7 @@ import { existsSync, readFileSync, rmSync } from "fs";
 import mime from "mime-types";
 import { createContext, destroyContext } from "~/context";
 import { error, info } from "~/log";
+import { walkApp } from "~/render/helper";
 import { leafData, renderData, renderServer } from "~/render/server";
 
 declare global {
@@ -109,13 +110,19 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                         context,
                     );
                     await destroyContext(context);
+                    const tree = walkApp();
                     const code = readFileSync(
                         ".cache/kit/lib/render/client.js",
                         "utf-8",
-                    ).replace(
-                        "const data = {}",
-                        `const data = ${JSON.stringify(data)}`,
-                    );
+                    )
+                        .replace(
+                            "const data = {}",
+                            `const data = ${JSON.stringify(data)}`,
+                        )
+                        .replace(
+                            "const tree = {}",
+                            `const tree = ${JSON.stringify(tree)}`,
+                        );
                     return new Response(code, { headers });
                 } catch (e: any) {
                     error(e);
