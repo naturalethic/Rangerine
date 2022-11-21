@@ -1,5 +1,6 @@
-import { RouteContext } from "@tangerine/kit";
+import { RouteContext, RouterContext } from "@tangerine/kit";
 import path from "object-path";
+import { useContext } from "react";
 
 interface Form {
     children?: React.ReactNode;
@@ -81,33 +82,33 @@ export function Action({
         "bg-zinc-800 text-zinc-400 rounded px-2 py-1 border border-zinc-500";
     children ??= name;
     method = method.toLowerCase();
+    const routerContext = useContext(RouterContext);
+    const routeContext = useContext(RouteContext);
     return (
-        <RouteContext.Consumer>
-            {(context) => (
-                <button
-                    className={className}
-                    name="action"
-                    value={name}
-                    type={primary ? "submit" : "button"}
-                    onClick={(event) => {
-                        event.preventDefault();
-                        submit(
-                            context,
-                            event.currentTarget.form!,
-                            method,
-                            name,
-                        );
-                    }}
-                >
-                    {children}
-                </button>
-            )}
-        </RouteContext.Consumer>
+        <button
+            className={className}
+            name="action"
+            value={name}
+            type={primary ? "submit" : "button"}
+            onClick={(event) => {
+                event.preventDefault();
+                submit(
+                    routerContext,
+                    routeContext,
+                    event.currentTarget.form!,
+                    method,
+                    name,
+                );
+            }}
+        >
+            {children}
+        </button>
     );
 }
 
 async function submit(
-    context: RouteContext,
+    routerContext: RouterContext,
+    routeContext: RouteContext,
     form: HTMLFormElement,
     method: string,
     action: string,
@@ -125,8 +126,9 @@ async function submit(
     });
     if (response.redirected) {
         const url = new URL(response.url);
+        routerContext.setPath(url.pathname);
     } else {
         const result = await response.json();
-        method === "post" && context.setPost(result.post);
+        method === "post" && routeContext.setPost(result.post);
     }
 }

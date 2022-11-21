@@ -1,6 +1,5 @@
 import React, {
     createContext,
-    lazy,
     Suspense,
     useContext,
     useEffect,

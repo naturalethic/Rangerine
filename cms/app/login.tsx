@@ -26,7 +26,7 @@ export default function ({ get, post }: Route<typeof api>) {
         <Form className="w-64" error={post?.error}>
             <Text name="username" />
             <Text name="password" redacted={true} />
-            <Action name="login" />
+            <Action name="login" primary={true} />
         </Form>
     );
 }
