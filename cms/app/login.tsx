@@ -23,10 +23,15 @@ export const api = {
 
 export default function ({ get, post }: Route<typeof api>) {
     return (
-        <Form className="w-64" error={post?.error}>
-            <Text name="username" />
-            <Text name="password" redacted={true} />
-            <Action name="login" primary={true} />
-        </Form>
+        <div className="flex flex-col items-center justify-center h-screen space-y-4">
+            <div className="text-orange-600 text-6xl font-sacramento mb-10">
+                Tangerine
+            </div>
+            <Form className="w-64" error={post?.error}>
+                <Text name="username" />
+                <Text name="password" redacted={true} />
+                <Action name="login" primary={true} />
+            </Form>
+        </div>
     );
 }

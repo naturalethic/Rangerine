@@ -1,5 +1,6 @@
 import React, {
     createContext,
+    lazy,
     Suspense,
     useContext,
     useEffect,
@@ -78,13 +79,15 @@ export const RouteContext = createContext({
 });
 
 interface RouteProvider {
-    Component: any;
+    // Component: any;
+    module: any;
     subroutes: JSX.Element[];
     data: any;
 }
 
 export function RouteProvider({
-    Component,
+    // Component,
+    module,
     subroutes,
     data = { get: {}, post: {} },
 }: RouteProvider) {
@@ -99,26 +102,36 @@ export function RouteProvider({
                 setPost,
             }}
         >
-            <RouteWrapper Component={Component} subroutes={subroutes} />
+            <RouteWrapper module={module} subroutes={subroutes} />
         </RouteContext.Provider>
     );
 }
 
 interface RouteWrapper {
-    Component: any;
+    // Component: any;
+    module: any;
     subroutes: JSX.Element[];
 }
 
-function RouteWrapper({ Component, subroutes }: RouteWrapper) {
+function RouteWrapper({ module, subroutes }: RouteWrapper) {
+    const Component = lazy(() => module);
+    const Layout = lazy(async () => {
+        const { Layout } = await module;
+        return { default: Layout ? Layout : React.Fragment };
+    });
     const { path: currentPath } = useContext(RouterContext);
     const { get, post } = useContext(RouteContext);
     return (
         <Suspense fallback="Loading...">
+            {/* <Layout> */}
+            {/* <Suspense fallback="Loading..."> */}
             <Component get={get} post={post}>
                 {subroutes.filter((child) =>
                     currentPath.startsWith(child.key as string),
                 )}
             </Component>
+            {/* </Suspense> */}
+            {/* </Layout> */}
         </Suspense>
     );
 }

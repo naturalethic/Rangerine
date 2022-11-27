@@ -50,7 +50,8 @@ export interface AppNode {
     dir: string;
     file: string;
     children: AppNode[];
-    Component?: any;
+    // Component?: any;
+    module?: any;
 }
 
 export function walkApp(tree?: AppNode): AppNode {

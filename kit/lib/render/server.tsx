@@ -5,6 +5,7 @@ import { reduceUrl } from "./helper";
 
 interface Module {
     default: any;
+    layout?: any;
     api: {
         get: any;
         post: any;
@@ -18,6 +19,7 @@ interface UrlReducerParams<T> {
     path: string;
     module: Module;
     Component: any;
+    Layout?: any;
     content: T;
     data?: any;
     context?: any;
@@ -45,6 +47,7 @@ async function reduce<T>(
                         : undefined,
             };
             const Component = module.default;
+            const Layout = module.layout;
             return await fn({
                 url,
                 method,
@@ -95,7 +98,7 @@ export async function renderServer(method: string, url: string, context: any) {
         url,
         undefined,
         context,
-        async ({ Component, content, data }) => {
+        async ({ Component, Layout, content, data }) => {
             return (
                 <Suspense>
                     <Component get={data.get} post={data.post}>

@@ -6,7 +6,8 @@ import { RouteProvider, RouterProvider } from "~/route";
 import { AppNode } from "./helper";
 
 function renderApp(tree: AppNode, data: Record<string, any>) {
-    tree.Component = lazy(() => import(tree.file.replace(/^app/, "")));
+    // tree.Component = lazy(() => import(tree.file.replace(/^app/, "")));
+    tree.module = import(tree.file.replace(/^app/, ""));
     const subroutes = [];
     for (const child of tree.children) {
         subroutes.push(renderApp(child, data));
@@ -16,7 +17,8 @@ function renderApp(tree: AppNode, data: Record<string, any>) {
             key={tree.url}
             data={data[tree.url]}
             subroutes={subroutes}
-            Component={tree.Component}
+            // Component={tree.Component}
+            module={tree.module}
         />
     );
 }
