@@ -80,6 +80,9 @@ function handler(options: Partial<Serve<ServeOptions>>) {
                 } else if (url.pathname.endsWith(".tsx")) {
                     return new Response("Not found", { status: 404 });
                 }
+                if (!existsSync(`app${url.pathname}`)) {
+                    return new Response("Not found", { status: 404 });
+                }
                 const mimetype = mime.lookup(url.pathname);
                 if (mimetype) {
                     headers["Content-Type"] = mimetype;
@@ -179,7 +182,7 @@ function handler(options: Partial<Serve<ServeOptions>>) {
 }
 
 function build() {
-    rmSync(".cache", { recursive: true });
+    rmSync(".cache", { recursive: true, force: true });
     reportError(
         spawnSync([
             "esbuild",

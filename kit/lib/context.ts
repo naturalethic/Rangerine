@@ -24,9 +24,9 @@ export async function createContext(
     const db = await globalThis.pool.acquire();
     let session;
     try {
-        session = sessionId
-            ? await readSession(db, sessionId)
-            : await createSession(db);
+        session =
+            (sessionId && (await readSession(db, sessionId))) ||
+            (await createSession(db));
     } catch (e) {
         session = await createSession(db);
     }

@@ -12,7 +12,7 @@ export class Connection {
         this.namespace = namespace;
         this.database = database;
         this.acquired = false;
-        this.db = new Surreal(`${process.env.DATABASE_ENDPOINT!}/rpc`);
+        this.db = new Surreal(`ws://${process.env.DATABASE_ENDPOINT!}/rpc`);
     }
 
     async connect() {
